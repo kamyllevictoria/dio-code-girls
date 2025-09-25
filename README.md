@@ -97,11 +97,6 @@
 
 <img width="708" height="223" alt="Image" src="https://github.com/user-attachments/assets/a35ee529-b62c-417e-b528-ad3e311b81ae" />
 <h3>Conhecendo o AWS Step Functions</h3>
-<p>
-O AWS Step Functions é um serviço da Amazon Web Services que permite orquestrar (coordenar e gerenciar) fluxos de trabalho distribuídos. 
-Pense nele como um maestro que controla uma orquestra de serviços da AWS. Em vez de escrever código complexo para lidar com a lógica de cada etapa, 
-você pode criar visualmente um "fluxo de trabalho" (também chamado de "máquina de estados").
-</p>
 
 <h3>Como funciona?</h3>
 <p>
