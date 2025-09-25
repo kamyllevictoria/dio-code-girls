@@ -96,3 +96,117 @@
 <img width="862" height="660" alt="Image" src="https://github.com/user-attachments/assets/805aa08e-9fd2-4fa5-86d2-fa0e82f2ef96" />
 
 <img width="708" height="223" alt="Image" src="https://github.com/user-attachments/assets/a35ee529-b62c-417e-b528-ad3e311b81ae" />
+<h3>Conhecendo o AWS Step Functions</h3>
+<p>
+O AWS Step Functions é um serviço da Amazon Web Services que permite orquestrar (coordenar e gerenciar) fluxos de trabalho distribuídos. 
+Pense nele como um maestro que controla uma orquestra de serviços da AWS. Em vez de escrever código complexo para lidar com a lógica de cada etapa, 
+você pode criar visualmente um "fluxo de trabalho" (também chamado de "máquina de estados").
+</p>
+
+<h3>Como funciona?</h3>
+<p>
+O Step Functions usa um formato chamado Amazon States Language para definir seu fluxo de trabalho. 
+É um arquivo JSON que descreve as etapas, as transições entre elas e as ações a serem tomadas. 
+Cada etapa é um "estado" que pode ser uma ação (como executar uma função Lambda), uma escolha (como um if/else), ou uma espera. 
+O serviço executa a lógica do fluxo de trabalho, garantindo que as etapas ocorram na ordem correta, 
+gerenciando erros, tentativas de repetição e o estado de cada execução.
+</p>
+
+<h3>Benefícios e Projeto Modelo no AWS Step Functions</h3>
+<p>Os benefícios do Step Functions se concentram em simplificar a criação e o gerenciamento de aplicações complexas.</p>
+
+<h4>Benefícios:</h4>
+<ul>
+  <li><strong>Facilidade de Desenvolvimento:</strong> A interface visual para construir fluxos de trabalho torna o processo intuitivo. Você simplesmente arrasta e solta os serviços e os conecta.</li>
+  <li><strong>Tolerância a Falhas:</strong> Ele gerencia automaticamente falhas, permitindo que você defina lógicas de nova tentativa (retries) e tratamento de erros (catch) para lidar com problemas inesperados.</li>
+  <li><strong>Monitoramento e Auditoria:</strong> Ele fornece logs e um mapa visual da execução do seu fluxo de trabalho em tempo real. Isso facilita a identificação de gargalos ou problemas.</li>
+  <li><strong>Estado e Escala:</strong> O serviço mantém o estado de cada execução, o que é crucial para fluxos de trabalho longos. Ele também escala automaticamente para gerenciar milhares de execuções simultâneas.</li>
+</ul>
+
+<h4>Projeto Modelo:</h4>
+<p>Um projeto modelo comum é um fluxo de trabalho de processamento de pedidos:</p>
+<ul>
+  <li><strong>Estado 1 - Receber Pedido:</strong> Executa uma função Lambda para validar os dados do pedido.</li>
+  <li><strong>Estado 2 - Processar Pagamento:</strong> Chama um serviço de pagamento externo. Se o pagamento falhar, ele pode retornar ao cliente com um erro. Se for bem-sucedido, ele avança.</li>
+  <li><strong>Estado 3 - Atualizar Estoque:</strong> Executa outra função Lambda para subtrair os itens do estoque.</li>
+  <li><strong>Estado 4 - Notificar Cliente:</strong> Envia um e-mail de confirmação ao cliente.</li>
+  <li><strong>Estado 5 - Enviar para Entrega:</strong> Chama um serviço de entrega para agendar o envio.</li>
+</ul>
+<p>
+O Step Functions orquestra essas cinco etapas, garantindo que o pedido só seja enviado para entrega após o pagamento e a atualização do estoque serem bem-sucedidos.
+</p>
+
+<h3>Realizando Validações no AWS Step Functions</h3>
+<p>
+A validação é a etapa em que você verifica se os dados de entrada ou o resultado de uma etapa atendem aos critérios desejados. 
+O Step Functions permite que você faça isso de forma robusta.
+</p>
+
+<h4>Como funciona?</h4>
+<p>
+Você usa o estado <code>Choice</code> para criar uma ramificação condicional no seu fluxo de trabalho. 
+O estado avalia uma ou mais condições e, com base nisso, direciona a execução para um estado diferente.
+</p>
+
+<h4>Exemplo de validação:</h4>
+<p>Imagine que, após a etapa de "Processar Pagamento", você queira verificar o código de retorno.</p>
+
+<pre><code>{
+  "ChoiceState": {
+    "Type": "Choice",
+    "Choices": [
+      {
+        "Variable": "$.statusCode",
+        "NumericEquals": 200,
+        "Next": "UpdateInventory"
+      },
+      {
+        "Variable": "$.statusCode",
+        "NumericEquals": 400,
+        "Next": "Refund"
+      }
+    ],
+    "Default": "HandleError"
+  }
+}
+</code></pre>
+
+<p>
+Neste exemplo, o Step Functions avalia a variável <code>$.statusCode</code>:
+</p>
+<ul>
+  <li>Se for <code>200</code> (sucesso), ele passa para a próxima etapa <strong>UpdateInventory</strong>.</li>
+  <li>Se for <code>400</code> (erro), ele vai para a etapa <strong>Refund</strong> (reembolso).</li>
+  <li>Se for qualquer outro valor, ele segue para o estado <strong>Default</strong> de <strong>HandleError</strong>.</li>
+</ul>
+
+<h3>Criando e Executando Lambda no AWS Step Functions</h3>
+<p>
+O AWS Lambda é um serviço de "computação sem servidor" que permite executar código em resposta a eventos. 
+A combinação de Step Functions e Lambda é extremamente poderosa, pois o Step Functions fornece a lógica de orquestração 
+e o Lambda fornece a lógica de negócios em código.
+</p>
+
+<h4>Como funciona?</h4>
+<ul>
+  <li><strong>Crie sua função Lambda:</strong> Escreva o código que realiza uma tarefa específica (por exemplo, validação de dados, envio de um e-mail, etc.).</li>
+  <li><strong>Defina o estado Task no Step Functions:</strong> No seu arquivo JSON da máquina de estados, você cria um estado do tipo <code>Task</code> e especifica a função Lambda que ele deve chamar.</li>
+  <li><strong>Passe dados entre as etapas:</strong> O Step Functions permite que você passe a saída de uma função Lambda como entrada para a próxima etapa, criando um fluxo contínuo de dados.</li>
+</ul>
+
+<h4>Exemplo:</h4>
+<pre><code>{
+  "ValidateData": {
+    "Type": "Task",
+    "Resource": "arn:aws:lambda:us-east-1:123456789012:function:ValidateFunction",
+    "Next": "ChoiceState"
+  }
+}
+</code></pre>
+
+<p>
+Neste exemplo, o Step Functions executa a função Lambda <code>ValidateFunction</code>. 
+A saída dessa função será então passada para o próximo estado, <code>ChoiceState</code>, 
+para que o fluxo de trabalho possa tomar uma decisão com base nos resultados da validação.
+</p>
+
